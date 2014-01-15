@@ -12,11 +12,15 @@ from threading import BoundedSemaphore
 ipSet = dict()
         
 def listReader(addressPath):
-    for line in open(addressPath, 'r'):
-        info = line.split("->")
-        if len(info) == 2:
-            info[1] = info[1].replace('\n', '')
-            ipSet[info[0]] = info[1]
+    #Try is used when the user states a specific path to save or if an incorrect path is given.
+    try:
+        for line in open(addressPath, 'r'):
+            info = line.split("->")
+            if len(info) == 2:
+                info[1] = info[1].replace('\n', '')
+                ipSet[info[0]] = info[1]
+    except:
+	    ipSet = dict()
 
 def listWriter(addressPath):
     file = open(addressPath, 'w')
@@ -24,9 +28,9 @@ def listWriter(addressPath):
         file.write("%s->%s\n" % (key, ipSet[key]))
     file.close()
 
-ipRegex = re.compile('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')    
 def logParser(logPath):
     newIPList = set()
+    ipRegex = re.compile('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
     try:
         for line in open(logPath, 'r'):
             try:
@@ -40,7 +44,7 @@ def logParser(logPath):
         return newIPList
     except IOError:
         print 'Log File not found. This program will now exit'
-        return False
+        exit(0)
 
 def reverseLookup(ipAddress):
     try:
@@ -67,7 +71,7 @@ def ipLookup(newIPList, verbose):
     [lookup.join() for lookup in threads]
                
 def main():
-    parser = optparse.OptionParser('usage%prog -L <log file> -H <address list> -v <verbose mode>')
+    parser = optparse.OptionParser('usage: %prog [options] -L <log file> -H <address list> -v <verbose mode>')
     parser.add_option('-L', dest='logPath', type='string', help='specify log file')
     parser.add_option('-H', dest='addressPath', type='string', \
         help='specify address list file')
@@ -83,11 +87,9 @@ def main():
     if addressPath != None:
         listReader(addressPath)
     else:
-        # If no address list is given, a new one is generated
+        # If no address list location is given, this creates addressList.txt
         addressPath = 'addressList.txt'
     newIPList = logParser(logPath)
-    if(newIPList == False):
-        exit()
     print "Log read, now looking up addresses"
     ipLookup(newIPList, verbose)
     listWriter(addressPath)
